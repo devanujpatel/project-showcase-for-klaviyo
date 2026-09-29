@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aura News Ranker · Dev Patel</title>
+  <meta name="description" content="A self-hosted news recommender that ranks daily articles with embeddings, a Neo4j knowledge graph and my own feedback.">
+  <meta property="og:title" content="Aura News Ranker · Dev Patel">
+  <meta property="og:description" content="A self-hosted news recommender that ranks daily articles with embeddings, a Neo4j knowledge graph and my own feedback.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://devanujpatel.github.io/aura-news-ranker/img/dashboard.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231f6f78'/%3E%3Ccircle cx='10' cy='12' r='3' fill='%23fff'/%3E%3Ccircle cx='22' cy='11' r='3' fill='%23fff'/%3E%3Ccircle cx='16' cy='22' r='3' fill='%23fff'/%3E%3Cpath d='M10 12L22 11M10 12L16 22M22 11L16 22' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Dev Patel · personal project · 2025–present</div>
+    <h1>Aura: a news feed that learns what I care about</h1>
+    <p class="lede">A self-hosted recommender I built and use every day. It pulls business and tech news, extracts entities and themes with open-source models, stores everything in a knowledge graph, and re-ranks each day's articles using my own feedback.</p>
+  </header>
+
+  <div class="stats" aria-label="Current graph size">
+    <div class="stat"><b>454</b><span>articles in graph</span></div>
+    <div class="stat"><b>43</b><span>rated by me</span></div>
+    <div class="stat"><b>497</b><span>extracted entities</span></div>
+    <div class="stat"><b>25</b><span>themes</span></div>
+    <div class="stat"><b>1,902</b><span>similarity + entity links</span></div>
+  </div>
+
+  <section>
+    <div class="eyebrow">The product</div>
+    <figure>
+      <a href="img/dashboard.png" target="_blank" rel="noopener"><img src="img/dashboard.png" alt="Streamlit dashboard showing ranked news articles with interest, similarity and graph scores, extracted entities and themes, and love, like, dislike and note buttons" width="1400" height="942"></a>
+      <figcaption><strong>Daily dashboard.</strong> Each card shows its three sub-scores, the entities and themes the models found, and buttons for feedback. Every reaction is written back to the graph and changes the next day's ranking.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>How it works</h2>
+    <ol class="flow">
+      <li><b>Fetch</b> the day's business and tech headlines. <span class="tool">NewsAPI</span></li>
+      <li><b>Embed</b> title and description. <span class="tool">sentence-transformers · all-MiniLM-L6-v2</span></li>
+      <li><b>Filter cheaply first.</b> Only articles that pass an embedding-based interest check go on to the heavier models, which keeps daily runs fast on a CPU.</li>
+      <li><b>Extract</b> people, companies and countries, and merge near-duplicate names by embedding similarity. <span class="tool">GLiNER</span></li>
+      <li><b>Classify</b> each article into up to 3 of 27 themes. <span class="tool">zero-shot DistilBART-MNLI</span></li>
+      <li><b>Write to the graph</b>: article node, entity and theme edges, and SIMILAR_TO edges to past articles above 0.5 cosine similarity. <span class="tool">Neo4j · MongoDB</span></li>
+      <li><b>Rank and collect feedback</b> in the dashboard. <span class="tool">Streamlit</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Ranking</h2>
+    <p>Three signals, each explainable. The graph score looks at what I thought of an article's neighbours.</p>
+    <div class="formula">
+      <div><span class="k">final</span> = 0.4 · interest + 0.4 · similarity_to_liked + 0.2 · graph</div>
+      <div><span class="k">graph</span> = 0.5 · similar_articles + 0.3 · shared_entities + 0.2 · shared_themes</div>
+      <div><span class="k">weights</span>: love +1.0 · like +0.5 · dislike −0.25 · unrated 0</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The knowledge graph</h2>
+    <div class="graphs">
+      <figure>
+        <a href="img/schema.png" target="_blank" rel="noopener"><img src="img/schema.png" alt="Neo4j schema: Article nodes link to Theme via HAS_THEME, to Entity via MENTIONS_ENTITY, and to other Articles via SIMILAR_TO" width="628" height="641"></a>
+        <figcaption><strong>Schema.</strong> Articles link to entities, themes and to each other.</figcaption>
+      </figure>
+      <figure>
+        <a href="img/neighborhood.png" target="_blank" rel="noopener"><img src="img/neighborhood.png" alt="An article I loved about stock futures, surrounded by similar market articles, entities like CNBC, NASDAQ and S&amp;P 500, and themes" width="688" height="665"></a>
+        <figcaption><strong>A loved article.</strong> Similar stories, the entities it mentions and its themes. New articles near it get a boost.</figcaption>
+      </figure>
+      <figure>
+        <a href="img/score.png" target="_blank" rel="noopener"><img src="img/score.png" alt="Subgraph showing an unrated article connected through shared entities and themes to articles I rated" width="765" height="759"></a>
+        <figcaption><strong>Why an article ranks high.</strong> An unrated article reaches rated ones through shared entities and themes. These paths are the graph score.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Checking the feedback</h2>
+    <p>A query over my reactions shows which themes I actually engage with. I use it to sanity-check the ranker and tune the weights.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Theme</th><th class="n">Articles</th><th class="n">Liked</th><th>Liked rate</th></tr></thead>
+        <tbody>
+          <tr><td>Stock Market &amp; Investing</td><td class="n">44</td><td class="n">8</td><td class="rate"><span class="bar" style="width:73px"></span>18.2%</td></tr>
+          <tr><td>Corporate Earnings &amp; Financial Reports</td><td class="n">50</td><td class="n">7</td><td class="rate"><span class="bar" style="width:56px"></span>14.0%</td></tr>
+          <tr><td>Big Tech Companies</td><td class="n">48</td><td class="n">6</td><td class="rate"><span class="bar" style="width:50px"></span>12.5%</td></tr>
+          <tr><td>Artificial Intelligence &amp; ML</td><td class="n">118</td><td class="n">14</td><td class="rate"><span class="bar" style="width:48px"></span>11.9%</td></tr>
+          <tr><td>Global Trade &amp; Economy</td><td class="n">47</td><td class="n">5</td><td class="rate"><span class="bar" style="width:42px"></span>10.6%</td></tr>
+          <tr><td>Cybersecurity &amp; Data Privacy</td><td class="n">38</td><td class="n">2</td><td class="rate"><span class="bar" style="width:21px"></span>5.3%</td></tr>
+          <tr><td>Workplace &amp; Future of Work</td><td class="n">37</td><td class="n">1</td><td class="rate"><span class="bar" style="width:11px"></span>2.7%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why it's relevant to AI Engineer I</h2>
+    <ul class="fit">
+      <li><b>Personalization</b><span>The same problem Klaviyo solves for brands: rank content for one person from their behaviour, and keep the ranking explainable.</span></li>
+      <li><b>Retrieval</b><span>Vector similarity combined with graph traversal over extracted entities and themes, the same retrieval layer a GraphRAG system uses.</span></li>
+      <li><b>Human in the loop</b><span>Explicit feedback flows straight back into the graph and changes future scores. Queries over that feedback serve as a lightweight evaluation.</span></li>
+      <li><b>Shipping it</b><span>A FastAPI service that runs the daily fetch, feedback and cleanup pipelines, deployed with Docker Compose alongside MongoDB and Neo4j. The work included a data migration when I redesigned the graph schema.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Next</h2>
+    <p>Offline evaluation (precision@10 against held-out reactions), and learned weights in place of the hand-tuned ones.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Stack</div>
+    <div class="chips">
+      <span>Python</span><span>FastAPI</span><span>Docker</span><span>Neo4j</span><span>MongoDB</span><span>Hugging Face</span><span>GLiNER</span><span>sentence-transformers</span><span>Streamlit</span>
+    </div>
+  </section>
+
+  <footer>Built and maintained by Dev Patel.</footer>
+</main>
+</body>
+</html>
