@@ -19,9 +19,9 @@
 <body>
 <main>
   <header>
-    <div class="eyebrow">Dev Patel · personal project · 2025–present</div>
-    <h1>Aura: a news feed that learns what I care about</h1>
-    <p class="lede">A self-hosted recommender I built and use every day. It pulls business and tech news, extracts entities and themes with open-source models, stores everything in a knowledge graph, and re-ranks each day's articles using my own feedback.</p>
+    <div class="eyebrow">Dev Patel's personal project</div>
+    <h1>Aura: an adaptive, RAG-based news feed</h1>
+    <p class="lede">A self-hosted recommender I built and use every day. It pulls business and tech news, extracts entities and themes with open-source models, stores associations in a knowledge graph, and ranks articles incorporating multi-signal feedback.</p>
   </header>
 
   <div class="stats" aria-label="Current graph size">
@@ -43,23 +43,23 @@
   <section>
     <h2>How it works</h2>
     <ol class="flow">
-      <li><b>Fetch</b> the day's business and tech headlines. <span class="tool">NewsAPI</span></li>
-      <li><b>Embed</b> title and description. <span class="tool">sentence-transformers · all-MiniLM-L6-v2</span></li>
-      <li><b>Filter cheaply first.</b> Only articles that pass an embedding-based interest check go on to the heavier models, which keeps daily runs fast on a CPU.</li>
-      <li><b>Extract</b> people, companies and countries, and merge near-duplicate names by embedding similarity. <span class="tool">GLiNER</span></li>
-      <li><b>Classify</b> each article into up to 3 of 27 themes. <span class="tool">zero-shot DistilBART-MNLI</span></li>
-      <li><b>Write to the graph</b>: article node, entity and theme edges, and SIMILAR_TO edges to past articles above 0.5 cosine similarity. <span class="tool">Neo4j · MongoDB</span></li>
-      <li><b>Rank and collect feedback</b> in the dashboard. <span class="tool">Streamlit</span></li>
+      <li><b>Fetch</b> new business and tech headlines daily.
+      <li><b>Embed</b> title and description for similarity score.
+      <li><b>Filter cheaply:</b> Low score articles are dropped leaving promising articles for heavier models. Keeps my laptop from exploding.</li>
+      <li><b>Extract important entities</b> people, companies and countries.
+      <li><b>Classify</b> each article into themes (eg: AI, Finance, Fed)
+      <li><b>Write to the graph</b>: article nodes connected to entity nodes, themes nodes and other article nodes create a connected mesh of layered communities.
+      <li><b>Rank and collect feedback</b> in the dashboard.
     </ol>
   </section>
 
   <section>
     <h2>Ranking</h2>
-    <p>Three signals, each explainable. The graph score looks at what I thought of an article's neighbours.</p>
+    <p>The graph score looks at what I thought of an article's neighbours and articles with similar entities and themes. Secret sauce:</p>
     <div class="formula">
-      <div><span class="k">final</span> = 0.4 · interest + 0.4 · similarity_to_liked + 0.2 · graph</div>
-      <div><span class="k">graph</span> = 0.5 · similar_articles + 0.3 · shared_entities + 0.2 · shared_themes</div>
-      <div><span class="k">weights</span>: love +1.0 · like +0.5 · dislike −0.25 · unrated 0</div>
+      <div><span class="k">final</span> = f(interest, similarity_to_liked, graph)</div>
+      <div><span class="k">graph</span> = f(similar_articles, shared_entities, shared_themes)</div>
+      <div><span class="k">interest/feedback</span>: f(love, like, -dislike, unrated)</div>
     </div>
   </section>
 
@@ -101,18 +101,13 @@
   </section>
 
   <section>
-    <h2>Why it's relevant to AI Engineer I</h2>
+    <h2>Why it's relevant to AI Engineer I at Klaviyo</h2>
     <ul class="fit">
       <li><b>Personalization</b><span>The same problem Klaviyo solves for brands: rank content for one person from their behaviour, and keep the ranking explainable.</span></li>
       <li><b>Retrieval</b><span>Vector similarity combined with graph traversal over extracted entities and themes, the same retrieval layer a GraphRAG system uses.</span></li>
       <li><b>Human in the loop</b><span>Explicit feedback flows straight back into the graph and changes future scores. Queries over that feedback serve as a lightweight evaluation.</span></li>
       <li><b>Shipping it</b><span>A FastAPI service that runs the daily fetch, feedback and cleanup pipelines, deployed with Docker Compose alongside MongoDB and Neo4j. The work included a data migration when I redesigned the graph schema.</span></li>
     </ul>
-  </section>
-
-  <section>
-    <h2>Next</h2>
-    <p>Offline evaluation (precision@10 against held-out reactions), and learned weights in place of the hand-tuned ones.</p>
   </section>
 
   <section>
